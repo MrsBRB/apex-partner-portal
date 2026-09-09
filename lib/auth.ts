@@ -14,14 +14,14 @@ export async function getUser() {
   return data.user;
 }
 
-export async function requireUser(returnTo = "/portal") {
+export async function requireUser(returnTo = "/portal", loginPath = "/login") {
   const user = await getUser();
-  if (!user?.email) redirect(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+  if (!user?.email) redirect(`${loginPath}?returnTo=${encodeURIComponent(returnTo)}`);
   return user;
 }
 
 export async function requireAdmin() {
-  const user = await requireUser("/admin");
+  const user = await requireUser("/admin", "/admin/login");
   if (!user.email || !adminEmails().includes(user.email.toLowerCase())) {
     redirect("/portal");
   }
