@@ -6,7 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/browser";
 
-export function LoginForm() {
+export function LoginForm({
+  next = "/portal",
+  notFoundMessage = "We could not find an approved partner account for that email.",
+}: {
+  next?: string;
+  notFoundMessage?: string;
+} = {}) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -20,15 +26,11 @@ export function LoginForm() {
       email,
       options: {
         shouldCreateUser: false,
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/portal`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
     setSending(false);
-    setMessage(
-      error
-        ? "We could not find an approved partner account for that email."
-        : "Check your email for your secure sign-in link.",
-    );
+    setMessage(error ? notFoundMessage : "Check your email for your secure sign-in link.");
   }
 
   return (
