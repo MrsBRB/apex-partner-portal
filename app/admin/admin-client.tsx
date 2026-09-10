@@ -43,6 +43,10 @@ type R = {
   qualificationDecision: string;
   qualificationReasons: string;
   routingStatus: string;
+  routingRationale: string;
+  vehicleTypes: string;
+  maintenanceScope: string;
+  opportunity: string;
 };
 // Fixed dollar amounts for the Apex-direct compensation categories, mirrored
 // from the Compensation rules table in app/resources/partner-workflow/page.tsx.
@@ -336,11 +340,13 @@ function ReferralRow({
   const [status, setStatus] = useState(row.status),
     [category, setCategory] = useState(row.category),
     [comp, setComp] = useState(String(row.compensation)),
-    [routingStatus, setRoutingStatus] = useState(row.routingStatus || "not_started");
+    [routingStatus, setRoutingStatus] = useState(row.routingStatus || "not_started"),
+    [routingRationale, setRoutingRationale] = useState(row.routingRationale || "");
   let reasons: string[] = [];
   try {
     reasons = JSON.parse(row.qualificationReasons || "[]");
   } catch {}
+  const needsRoutingReview = routingStatus === "not_started";
   return (
     <tr className="border-t align-top">
       <td className="p-4 pl-6">
@@ -348,6 +354,11 @@ function ReferralRow({
         <div className="text-xs text-slate-500">
           Referred by {row.partnerEmail}
         </div>
+        {needsRoutingReview && (
+          <Badge className="mt-2 bg-[#fff0e5] text-[#bc5a15]">
+            Needs routing review
+          </Badge>
+        )}
       </td>
       <td className="p-4">
         <Badge variant="outline">{row.fleetSize || "?"} vehicles</Badge>
@@ -355,6 +366,26 @@ function ReferralRow({
           {row.location} ·{" "}
           {row.leadPath === "amazon_dsp" ? "DSP" : "Commercial"}
         </div>
+        <dl className="mt-2 max-w-64 space-y-1 text-xs leading-5 text-slate-500">
+          {row.vehicleTypes && (
+            <div>
+              <dt className="inline font-semibold text-slate-600">Class: </dt>
+              <dd className="inline">{row.vehicleTypes}</dd>
+            </div>
+          )}
+          {row.maintenanceScope && (
+            <div>
+              <dt className="inline font-semibold text-slate-600">Scope: </dt>
+              <dd className="inline">{row.maintenanceScope}</dd>
+            </div>
+          )}
+          {row.opportunity && (
+            <div>
+              <dt className="inline font-semibold text-slate-600">Need: </dt>
+              <dd className="inline">{row.opportunity}</dd>
+            </div>
+          )}
+        </dl>
       </td>
       <td className="p-4">
         <Badge>
@@ -377,6 +408,13 @@ function ReferralRow({
             <option value="custom_enterprise">Custom / enterprise</option>
           </select>
         </div>
+        <textarea
+          className="mt-2 w-full max-w-60 rounded border px-2 py-1 text-xs text-slate-700"
+          placeholder="Routing rationale (e.g. geography, threshold, footprint)"
+          rows={2}
+          value={routingRationale}
+          onChange={(e) => setRoutingRationale(e.target.value)}
+        />
       </td>
       <td className="p-4">
         <NativeSelect
@@ -445,6 +483,7 @@ function ReferralRow({
               category,
               compensation: Number(comp) || 0,
               routingStatus,
+              routingRationale,
             })
           }
         >
