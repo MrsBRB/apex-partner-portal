@@ -1,16 +1,22 @@
 "use client";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { NotificationCenter, type AdminNotification } from "./notification-center";
-type P = {
+export type PartnerRow = {
   id: number;
   contactName: string;
   companyName: string;
   email: string;
+  phone: string;
+  website: string;
+  markets: string;
+  experience: string;
+  documentName: string | null;
+  documentUrl: string | null;
   status: string;
   agreementStatus: string;
   agreementEmailStatus: string;
@@ -43,13 +49,22 @@ export function AdminClient({
   initialReferrals,
   initialNotifications,
 }: {
-  initialPartners: P[];
+  initialPartners: PartnerRow[];
   initialReferrals: R[];
   initialNotifications: AdminNotification[];
 }) {
   const [partners, setPartners] = useState(initialPartners);
   const [refs, setRefs] = useState(initialReferrals);
   const [notice, setNotice] = useState("");
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  function toggleExpanded(id: number) {
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
   async function save(
     kind: string,
     id: number,
@@ -62,9 +77,11 @@ export function AdminClient({
     });
     const body = await res.json();
     if (body.record) {
+      // Merge rather than replace: the PATCH response only carries partners-table
+      // columns, and would otherwise wipe the document link/name attached client-side.
       if (kind === "partner")
         setPartners((current) =>
-          current.map((p) => (p.id === id ? body.record : p)),
+          current.map((p) => (p.id === id ? { ...p, ...body.record } : p)),
         );
       else
         setRefs((current) =>
@@ -120,12 +137,20 @@ export function AdminClient({
             </thead>
             <tbody>
               {partners.map((p) => (
-                <tr className="border-t align-top" key={p.id}>
+                <Fragment key={p.id}>
+                <tr className="border-t align-top">
                   <td className="p-4 pl-6">
                     <b>{p.contactName}</b>
                     <div className="text-xs text-slate-500">
                       {p.companyName} · {p.email}
                     </div>
+                    <button
+                      type="button"
+                      className="mt-2 text-xs font-bold text-[#bc5a15] underline underline-offset-2"
+                      onClick={() => toggleExpanded(p.id)}
+                    >
+                      {expanded.has(p.id) ? "Hide full application" : "View full application"}
+                    </button>
                   </td>
                   <td className="p-4">
                     {new Date(p.createdAt).toLocaleDateString()}
@@ -201,6 +226,59 @@ export function AdminClient({
                       )}
                   </td>
                 </tr>
+                {expanded.has(p.id) && (
+                  <tr className="border-t bg-slate-50">
+                    <td colSpan={4} className="p-6">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <DetailField label="Phone" value={p.phone || "—"} />
+                        <DetailField
+                          label="Website or LinkedIn"
+                          value={
+                            p.website ? (
+                              <a
+                                href={/^https?:\/\//.test(p.website) ? p.website : `https://${p.website}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#bc5a15] underline underline-offset-2"
+                              >
+                                {p.website}
+                              </a>
+                            ) : (
+                              "—"
+                            )
+                          }
+                        />
+                        <DetailField label="Primary markets / regions" value={p.markets || "—"} />
+                        <DetailField
+                          label="Supporting document"
+                          value={
+                            p.documentUrl ? (
+                              <a
+                                href={p.documentUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#bc5a15] underline underline-offset-2"
+                              >
+                                {p.documentName || "View document"}
+                              </a>
+                            ) : (
+                              "None uploaded"
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-xs font-bold uppercase tracking-[.1em] text-slate-500">
+                          Fleet experience and professional network
+                        </p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                          {p.experience || "—"}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -368,4 +446,12 @@ function agreementLabel(v: string) {
 }
 function stamp(v: string) {
   return new Date(v).toLocaleString();
+}
+function DetailField({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-[.1em] text-slate-500">{label}</p>
+      <p className="mt-1 text-sm text-slate-700">{value}</p>
+    </div>
+  );
 }
