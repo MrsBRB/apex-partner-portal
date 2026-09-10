@@ -44,6 +44,16 @@ type R = {
   qualificationReasons: string;
   routingStatus: string;
 };
+// Fixed dollar amounts for the Apex-direct compensation categories, mirrored
+// from the Compensation rules table in app/resources/partner-workflow/page.tsx.
+// Partner-routed (25% of qualifying compensation) and Custom/enterprise are
+// intentionally excluded — those amounts are case-by-case and stay manual.
+const CATEGORY_AMOUNTS: Record<string, number> = {
+  apex_direct_500: 500,
+  apex_direct_1500: 1500,
+  apex_direct_3000: 3000,
+  apex_direct_5000: 5000,
+};
 export function AdminClient({
   initialPartners,
   initialReferrals,
@@ -391,15 +401,28 @@ function ReferralRow({
       <td className="p-4">
         <NativeSelect
           value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            setCategory(next);
+            const fixedAmount = CATEGORY_AMOUNTS[next];
+            if (fixedAmount !== undefined) setComp(String(fixedAmount));
+          }}
         >
           <option value="tbd">TBD</option>
-          <option value="apex_direct_500">Apex direct — $500</option>
-          <option value="apex_direct_1500">Apex direct — $1,500</option>
-          <option value="apex_direct_3000">Apex direct — $3,000</option>
-          <option value="apex_direct_5000">Apex direct — $5,000</option>
+          <option value="apex_direct_500">
+            Apex direct — small project ($500)
+          </option>
+          <option value="apex_direct_1500">
+            Apex direct — ongoing consulting ($1,500)
+          </option>
+          <option value="apex_direct_3000">
+            Apex direct — larger / multi-site ($3,000)
+          </option>
+          <option value="apex_direct_5000">
+            Apex direct — major enterprise ($5,000)
+          </option>
           <option value="partner_routed_25_percent">
-            Partner-routed — 25%
+            Partner-routed — 25% of qualifying compensation
           </option>
           <option value="custom_enterprise">Custom / enterprise</option>
         </NativeSelect>
