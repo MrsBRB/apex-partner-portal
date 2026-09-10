@@ -67,10 +67,21 @@ export function PortalClient({
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
+    const form = new FormData(e.currentTarget);
+    // Checkbox groups repeat the same field name once per checked box —
+    // FormData→Object.fromEntries would silently keep only the last one,
+    // so multi-select fields are collected with getAll() and joined instead.
+    const multiSelect = new Set(["vehicleTypes", "maintenanceScope", "opportunity"]);
+    const payload: Record<string, string> = {};
+    for (const key of new Set(form.keys())) {
+      payload[key] = multiSelect.has(key)
+        ? form.getAll(key).join(", ")
+        : String(form.get(key) ?? "");
+    }
     const res = await fetch("/api/referrals", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(Object.fromEntries(new FormData(e.currentTarget))),
+      body: JSON.stringify(payload),
     });
     const body = await res.json();
     if (res.ok) {
@@ -175,10 +186,16 @@ export function PortalClient({
                         <option value="amazon_dsp">Amazon DSP</option>
                       </NativeSelect>
                     </div>
-                    <Field
-                      label="Exact vehicle count"
+                    <SelectField
+                      label="Vehicle count"
                       name="fleetSize"
-                      type="number"
+                      options={[
+                        ["", "Choose a range"],
+                        ["1", "1–4 vehicles"],
+                        ["5", "5–9 vehicles"],
+                        ["10", "10–24 vehicles"],
+                        ["25", "25+ vehicles"],
+                      ]}
                     />
                     <SelectField
                       label="Count source"
@@ -189,7 +206,6 @@ export function PortalClient({
                         ["unverified", "Unverified estimate"],
                       ]}
                     />
-                    <Field label="Vehicle types" name="vehicleTypes" />
                     <SelectField
                       label="Service location"
                       name="serviceLocationType"
@@ -203,6 +219,21 @@ export function PortalClient({
                     <Field
                       label="Operating hours / service window"
                       name="operatingHours"
+                    />
+                  </div>
+                  <div className="mt-4">
+                    <CheckboxGroup
+                      label="Vehicle class"
+                      name="vehicleTypes"
+                      options={[
+                        "Light-duty (cars, pickups, cargo vans)",
+                        "Medium-duty trucks (box trucks, service trucks)",
+                        "Heavy-duty trucks (Class 7–8, dump trucks)",
+                        "Tractor-trailers / semi trucks",
+                        "Passenger vans / shuttles",
+                        "Specialty / vocational vehicles",
+                        "Trailers",
+                      ]}
                     />
                   </div>
                   {path === "amazon_dsp" && (
@@ -255,27 +286,36 @@ export function PortalClient({
                     />
                   </div>
                   <div className="mt-4">
-                    <Label htmlFor="maintenanceScope">
-                      Maintenance scope requested
-                    </Label>
-                    <Textarea
-                      id="maintenanceScope"
+                    <CheckboxGroup
+                      label="Maintenance scope requested"
                       name="maintenanceScope"
-                      required
-                      className="mt-2"
-                      rows={3}
+                      options={[
+                        "Preventive maintenance (PM)",
+                        "Repairs & breakdown service",
+                        "Tires",
+                        "Brakes",
+                        "DOT inspections / compliance",
+                        "Mobile / on-site service",
+                        "Full-service outsourced program",
+                        "Fleet technology / telematics",
+                      ]}
                     />
                   </div>
                   <div className="mt-4">
-                    <Label htmlFor="opportunity">
-                      Business need / reason they are evaluating
-                    </Label>
-                    <Textarea
-                      id="opportunity"
+                    <CheckboxGroup
+                      label="Business need / reason they are evaluating"
                       name="opportunity"
-                      required
-                      className="mt-2"
-                      rows={3}
+                      options={[
+                        "Current vendor underperforming",
+                        "Cost / pricing concerns",
+                        "Fleet growth outpacing current support",
+                        "Consolidating multiple vendors",
+                        "Compliance / DOT concerns",
+                        "Downtime / response-time issues",
+                        "Contract renewal / re-evaluating vendors",
+                        "Want mobile / on-site service",
+                      ]}
+                      hint="Anything else? Add it in Additional context below."
                     />
                   </div>
                 </Card>
@@ -501,6 +541,37 @@ function SelectField({
           </option>
         ))}
       </NativeSelect>
+    </div>
+  );
+}
+function CheckboxGroup({
+  label: lab,
+  name,
+  options,
+  hint,
+}: {
+  label: string;
+  name: string;
+  options: string[];
+  hint?: string;
+}) {
+  return (
+    <div>
+      <Label>
+        {lab} <span className="font-normal text-slate-500">(select all that apply)</span>
+      </Label>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        {options.map((opt) => (
+          <label
+            key={opt}
+            className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-slate-700"
+          >
+            <input type="checkbox" name={name} value={opt} className="accent-[#e87b2f]" />
+            {opt}
+          </label>
+        ))}
+      </div>
+      {hint && <p className="mt-2 text-xs text-slate-500">{hint}</p>}
     </div>
   );
 }
