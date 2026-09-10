@@ -247,7 +247,8 @@ function ReferralRow({
 }) {
   const [status, setStatus] = useState(row.status),
     [category, setCategory] = useState(row.category),
-    [comp, setComp] = useState(String(row.compensation));
+    [comp, setComp] = useState(String(row.compensation)),
+    [routingStatus, setRoutingStatus] = useState(row.routingStatus || "not_started");
   let reasons: string[] = [];
   try {
     reasons = JSON.parse(row.qualificationReasons || "[]");
@@ -276,7 +277,17 @@ function ReferralRow({
           {reasons.join(" · ") || "Legacy lead — needs review"}
         </div>
         <div className="mt-2 text-xs font-semibold text-slate-700">
-          Routing: {label(row.routingStatus || "not_started")}
+          Routing:{" "}
+          <select
+            className="ml-1 rounded border px-1 py-0.5 text-xs font-semibold text-slate-700"
+            value={routingStatus}
+            onChange={(e) => setRoutingStatus(e.target.value)}
+          >
+            <option value="not_started">Not Started</option>
+            <option value="apex_direct">Apex-direct</option>
+            <option value="partner_routed">Partner-routed</option>
+            <option value="custom_enterprise">Custom / enterprise</option>
+          </select>
         </div>
       </td>
       <td className="p-4">
@@ -332,6 +343,7 @@ function ReferralRow({
               status,
               category,
               compensation: Number(comp) || 0,
+              routingStatus,
             })
           }
         >

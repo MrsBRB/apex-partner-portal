@@ -1,12 +1,12 @@
 import { adminEmails, getUser } from "@/lib/auth";
-import { sendAgreementEmail } from "@/lib/email";
+import { sendAgreementEmail, sendDeclineEmail, sendReferralPaidEmail } from "@/lib/email";
 import { toCamelRecord } from "@/lib/records";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function PATCH(request: Request) {
   const user = await getUser();
   if (!user?.email || !adminEmails().includes(user.email.toLowerCase())) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const body = (await request.json()) as { kind?: string; id?: number; status?: string; action?: string; category?: string; compensation?: number };
+  const body = (await request.json()) as { kind?: string; id?: number; status?: string; action?: string; category?: string; compensation?: number; routingStatus?: string };
   const supabase = createAdminClient();
   if (body.kind === "partner") {
     const { data: partner } = await supabase.from("partners").select("*").eq("id", Number(body.id)).maybeSingle();
@@ -33,11 +33,23 @@ export async function PATCH(request: Request) {
       const { data: record } = await supabase.from("partners").update(values).eq("id", partner.id).select().single();
       return Response.json(delivery.ok ? { record: toCamelRecord(record) } : { record: toCamelRecord(record), error: delivery.error }, { status: delivery.ok ? 200 : 502 });
     }
+    if (body.status === "declined" && partner.status !== "declined") {
+      const { data: record } = await supabase.from("partners").update({ status: "declined" }).eq("id", partner.id).select().single();
+      const delivery = await sendDeclineEmail({ email: partner.email, contactName: partner.contact_name });
+      await supabase.from("notifications").insert({ type: "application_declined", title: "Application declined", message: `${partner.contact_name}'s application for ${partner.company_name} was declined${delivery.ok ? "" : " (decline email failed to send)"}.`, entity_type: "partner", entity_id: partner.id });
+      return Response.json({ record: toCamelRecord(record), warning: delivery.ok ? null : delivery.error });
+    }
     const { data: record } = await supabase.from("partners").update(body.status ? { status: body.status } : {}).eq("id", partner.id).select().single();
     return Response.json({ record: toCamelRecord(record) });
   }
+  const { data: existingReferral } = await supabase.from("referrals").select("status").eq("id", Number(body.id)).maybeSingle();
   const values: Record<string, unknown> = { status: body.status, category: body.category, compensation: Number(body.compensation) || 0 };
+  if (body.routingStatus) values.routing_status = body.routingStatus;
   if (body.status === "paid") values.paid_at = new Date().toISOString();
   const { data: record } = await supabase.from("referrals").update(values).eq("id", Number(body.id)).select().single();
+  if (body.status === "paid" && existingReferral?.status !== "paid" && record) {
+    const { data: recipient } = await supabase.from("partners").select("contact_name").eq("email", record.partner_email).order("id", { ascending: false }).limit(1).maybeSingle();
+    await sendReferralPaidEmail({ email: record.partner_email, contactName: recipient?.contact_name || "there" }, { companyName: record.company_name, compensation: record.compensation });
+  }
   return Response.json({ record: toCamelRecord(record) });
 }

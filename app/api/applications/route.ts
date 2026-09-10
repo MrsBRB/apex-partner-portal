@@ -10,6 +10,10 @@ export async function POST(request: Request) {
       return Response.json({ error: "Required fields missing" }, { status: 400 });
     }
     const supabase = createAdminClient();
+    const { data: existingApplication } = await supabase.from("partners").select("id").eq("email", email).neq("status", "declined").order("id", { ascending: false }).limit(1).maybeSingle();
+    if (existingApplication) {
+      return Response.json({ error: "An application is already on file for this email address." }, { status: 409 });
+    }
     const { data: partner, error } = await supabase.from("partners").insert({
       email,
       contact_name: value("contactName"),
