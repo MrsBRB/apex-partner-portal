@@ -63,7 +63,9 @@ export function PortalClient({
   const [open, setOpen] = useState(false);
   const [path, setPath] = useState("commercial_fleet");
   const [error, setError] = useState("");
-  const earned = rows.reduce((a, r) => a + r.compensation, 0);
+  const earned = rows
+    .filter((r) => r.status === "paid")
+    .reduce((a, r) => a + r.compensation, 0);
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
@@ -448,7 +450,13 @@ export function PortalClient({
                         : "—"}
                     </td>
                     <td className="p-4 pr-6 text-right font-bold">
-                      {money(r.compensation)}
+                      {r.status === "paid" ? (
+                        money(r.compensation)
+                      ) : (
+                        <span className="font-normal text-slate-400">
+                          Pending
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
