@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function PATCH(request: Request) {
   const user = await getUser();
   if (!user?.email || !adminEmails().includes(user.email.toLowerCase())) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const body = (await request.json()) as { kind?: string; id?: number; status?: string; action?: string; category?: string; compensation?: number; routingStatus?: string };
+  const body = (await request.json()) as { kind?: string; id?: number; status?: string; action?: string; category?: string; compensation?: number; routingStatus?: string; routingRationale?: string };
   const supabase = createAdminClient();
   if (body.kind === "partner") {
     const { data: partner } = await supabase.from("partners").select("*").eq("id", Number(body.id)).maybeSingle();
@@ -45,6 +45,7 @@ export async function PATCH(request: Request) {
   const { data: existingReferral } = await supabase.from("referrals").select("status").eq("id", Number(body.id)).maybeSingle();
   const values: Record<string, unknown> = { status: body.status, category: body.category, compensation: Number(body.compensation) || 0 };
   if (body.routingStatus) values.routing_status = body.routingStatus;
+  if (body.routingRationale !== undefined) values.routing_rationale = body.routingRationale;
   if (body.status === "paid") values.paid_at = new Date().toISOString();
   const { data: record } = await supabase.from("referrals").update(values).eq("id", Number(body.id)).select().single();
   if (body.status === "paid" && existingReferral?.status !== "paid" && record) {
