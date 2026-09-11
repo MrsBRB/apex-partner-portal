@@ -6,10 +6,21 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const value = (key: string) => String(form.get(key) || "").trim();
     const email = value("email").toLowerCase();
+    const emailVerifiedToken = value("emailVerifiedToken");
     if (!email || !value("contactName") || !value("companyName")) {
       return Response.json({ error: "Required fields missing" }, { status: 400 });
     }
     const supabase = createAdminClient();
+    const { data: verification } = await supabase
+      .from("email_verifications")
+      .select("verified_at")
+      .eq("email", email)
+      .eq("verified_token", emailVerifiedToken)
+      .maybeSingle();
+    const verifiedRecently = verification?.verified_at && Date.now() - new Date(verification.verified_at).getTime() < 60 * 60 * 1000;
+    if (!emailVerifiedToken || !verifiedRecently) {
+      return Response.json({ error: "Please verify your email before submitting." }, { status: 400 });
+    }
     const { data: existingApplication } = await supabase.from("partners").select("id").eq("email", email).neq("status", "declined").order("id", { ascending: false }).limit(1).maybeSingle();
     if (existingApplication) {
       return Response.json({ error: "An application is already on file for this email address." }, { status: 409 });
