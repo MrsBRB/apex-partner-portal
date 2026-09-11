@@ -53,6 +53,15 @@ export async function sendDeclineEmail(partner: { email: string; contactName: st
   });
 }
 
+export async function sendApplicationVerificationEmail(email: string, code: string): Promise<EmailResult> {
+  return send({
+    to: [email],
+    subject: `Your verification code: ${code}`,
+    text: `Your Apex Fleet Consulting partner application verification code is:\n\n${code}\n\nEnter this on the application page to continue. This code expires in 10 minutes.\n\nIf you didn't request this, you can ignore this email.\n\nApex Fleet Consulting LLC`,
+    html: `<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#0d1f35"><p style="font-weight:700;color:#bc5a15">APEX FLEET CONSULTING LLC</p><h1>Verify your email</h1><p>Use this code to continue your partner application:</p><p style="font-size:32px;font-weight:700;letter-spacing:6px;margin:20px 0">${escapeHtml(code)}</p><p style="color:#64748b">This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p></div>`,
+  });
+}
+
 export async function sendAdminNotification(subject: string, text: string) {
   const to = process.env.ADMIN_NOTIFICATION_EMAIL || "brooke@apexfleetconsulting.com";
   return send({ to: [to], subject, text });
