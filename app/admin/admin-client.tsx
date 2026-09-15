@@ -48,6 +48,13 @@ type R = {
   vehicleTypes: string;
   maintenanceScope: string;
   opportunity: string;
+  svtObjective: string;
+  svtUnits: number | null;
+  svtAttendees: number | null;
+  svtEnterpriseTermMonths: number | null;
+  svtEnterpriseGrossProfit: number | null;
+  svtAmazonRegistrationConfirmed: boolean;
+  svtExpectedBeforeCutoff: boolean | null;
 };
 // Fixed dollar amounts for the Apex-direct compensation categories, mirrored
 // from the Compensation rules table in app/resources/partner-workflow/page.tsx.
@@ -59,6 +66,85 @@ const CATEGORY_AMOUNTS: Record<string, number> = {
   apex_direct_3000: 3000,
   apex_direct_5000: 5000,
 };
+
+// ---- SVT Exhibit A gate check ------------------------------------------
+// Mirrors "The Deal Routing Workflow" and the "Exhibit A Rebuild Spec"
+// artifacts, so a partner-portal referral is evaluated against the same
+// five gates as every other lead-routing avenue (website assessment,
+// Outlook/HubSpot). This is Brooke's own SVT compensation, separate from
+// what the referring partner earns — never shown to the partner.
+const SVT_FOOTPRINT_KEYWORDS = [
+  "anaheim", "corona", "hesperia", "escondido", "san diego", "north las vegas",
+  "las vegas", "phoenix", "sacramento", "san francisco", "oakland", "san jose",
+  "fresno", "northern california",
+];
+function svtFootprintMatch(location: string): string | null {
+  const hit = SVT_FOOTPRINT_KEYWORDS.find((k) => location.toLowerCase().includes(k));
+  return hit ? hit.replace(/\b\w/g, (c) => c.toUpperCase()) : null;
+}
+const SVT_OBJECTIVE_LABELS: Record<string, string> = {
+  none: "Not an Exhibit A objective",
+  dsp_first: "DSP conversion — first at this station",
+  dsp_additional: "DSP conversion — additional at this station",
+  amazon_registration: "Amazon vendor network registration",
+  amazon_meeting: "Amazon DC fleet maintenance meeting",
+  enterprise_pma: "Signed PMA with a named enterprise account",
+  other_named: "Other named opportunity (unpriced)",
+};
+// Pay the higher band on the 25-unit overlap (Exhibit A Rebuild Spec, Decision 2).
+function svtTierAmount(units: number, table: [number, number][]): number {
+  for (const [floor, amount] of table) if (units >= floor) return amount;
+  return 0;
+}
+const SVT_TIER_DSP_FIRST: [number, number][] = [[75, 5000], [50, 4000], [25, 3000], [1, 1000]];
+const SVT_TIER_DSP_ADDITIONAL: [number, number][] = [[50, 2000], [25, 1500], [10, 1000]];
+const SVT_TIER_ENTERPRISE: [number, number][] = [[50, 2000], [25, 1500], [10, 1000]];
+const SVT_TERM_CUTOFF = new Date("2027-01-31T00:00:00Z");
+function svtDaysToCutoff(): number {
+  return Math.ceil((SVT_TERM_CUTOFF.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+}
+type SvtGateResult = {
+  footprintMatch: string | null;
+  gross: number;
+  eligible: number;
+  expected: number; // eligible x 75% verification probability (Decision 4 default)
+  failedGate: string | null;
+};
+function evaluateSvtGates(input: {
+  location: string;
+  objective: string;
+  units: number;
+  attendees: number;
+  amazonRegistrationConfirmed: boolean;
+  enterpriseTermMonths: number | null;
+  enterpriseGrossProfit: number | null;
+  expectedBeforeCutoff: boolean | null;
+}): SvtGateResult {
+  const footprintMatch = svtFootprintMatch(input.location);
+  const none: SvtGateResult = { footprintMatch, gross: 0, eligible: 0, expected: 0, failedGate: null };
+  if (input.objective === "none") return none;
+  if (!footprintMatch) return { ...none, failedGate: "Gate 1 — outside the SVT service footprint" };
+  let gross = 0;
+  if (input.objective === "dsp_first") gross = svtTierAmount(input.units, SVT_TIER_DSP_FIRST);
+  else if (input.objective === "dsp_additional") gross = svtTierAmount(input.units, SVT_TIER_DSP_ADDITIONAL);
+  else if (input.objective === "amazon_registration") gross = input.amazonRegistrationConfirmed ? 5000 : 0;
+  else if (input.objective === "amazon_meeting") gross = 500 * Math.max(0, input.attendees);
+  else if (input.objective === "enterprise_pma") gross = svtTierAmount(input.units, SVT_TIER_ENTERPRISE);
+  else if (input.objective === "other_named") gross = 0;
+  if (input.objective === "enterprise_pma") {
+    const termOk = (input.enterpriseTermMonths ?? 0) >= 12;
+    const gpOk = (input.enterpriseGrossProfit ?? 0) >= 100000;
+    if (!termOk || !gpOk)
+      return { footprintMatch, gross, eligible: 0, expected: 0, failedGate: `Gate 3 — enterprise conditions not met (${!termOk ? "term under 12 months" : ""}${!termOk && !gpOk ? "; " : ""}${!gpOk ? "gross profit under $100K/yr" : ""})` };
+  }
+  if (input.objective === "amazon_registration" && !input.amazonRegistrationConfirmed)
+    return { footprintMatch, gross, eligible: 0, expected: 0, failedGate: "Gate 2 — Amazon written confirmation not yet received" };
+  if (gross === 0)
+    return { footprintMatch, gross, eligible: 0, expected: 0, failedGate: input.objective === "other_named" ? "Unpriced — Exhibit A leaves this objective's incentive TBD" : "Gate 4 — this tier does not pay" };
+  if (input.expectedBeforeCutoff === false)
+    return { footprintMatch, gross, eligible: 0, expected: 0, failedGate: "Gate 5 — not expected to close before the Jan 31 2027 term cutoff" };
+  return { footprintMatch, gross, eligible: gross, expected: Math.round(gross * 0.75), failedGate: null };
+}
 export function AdminClient({
   initialPartners,
   initialReferrals,
@@ -372,12 +458,41 @@ function ReferralRow({
     [category, setCategory] = useState(row.category),
     [comp, setComp] = useState(String(row.compensation)),
     [routingStatus, setRoutingStatus] = useState(row.routingStatus || "not_started"),
-    [routingRationale, setRoutingRationale] = useState(row.routingRationale || "");
+    [routingRationale, setRoutingRationale] = useState(row.routingRationale || ""),
+    [svtObjective, setSvtObjective] = useState(row.svtObjective || "none"),
+    [svtUnits, setSvtUnits] = useState(String(row.svtUnits ?? row.fleetSize ?? "")),
+    [svtAttendees, setSvtAttendees] = useState(String(row.svtAttendees ?? "")),
+    [svtTermMonths, setSvtTermMonths] = useState(String(row.svtEnterpriseTermMonths ?? "")),
+    [svtGrossProfit, setSvtGrossProfit] = useState(String(row.svtEnterpriseGrossProfit ?? "")),
+    [svtAmazonConfirmed, setSvtAmazonConfirmed] = useState(row.svtAmazonRegistrationConfirmed || false),
+    [svtBeforeCutoff, setSvtBeforeCutoff] = useState<boolean | null>(row.svtExpectedBeforeCutoff ?? null);
   let reasons: string[] = [];
   try {
     reasons = JSON.parse(row.qualificationReasons || "[]");
   } catch {}
   const needsRoutingReview = routingStatus === "not_started";
+  const svtGate = evaluateSvtGates({
+    location: row.location || "",
+    objective: svtObjective,
+    units: Number(svtUnits) || 0,
+    attendees: Number(svtAttendees) || 0,
+    amazonRegistrationConfirmed: svtAmazonConfirmed,
+    enterpriseTermMonths: svtTermMonths === "" ? null : Number(svtTermMonths),
+    enterpriseGrossProfit: svtGrossProfit === "" ? null : Number(svtGrossProfit),
+    expectedBeforeCutoff: svtBeforeCutoff,
+  });
+  function applySvtRationale() {
+    setRoutingRationale(
+      svtObjective === "none"
+        ? routingRationale
+        : svtGate.failedGate
+          ? `${SVT_OBJECTIVE_LABELS[svtObjective]} — ${svtGate.failedGate}.`
+          : `${SVT_OBJECTIVE_LABELS[svtObjective]} — passes all five gates. Gross $${svtGate.gross.toLocaleString()}, expected $${svtGate.expected.toLocaleString()} at 75% verification.`,
+    );
+  }
+  function applySvtCompensation() {
+    setComp(String(Math.round(svtGate.expected * 0.25)));
+  }
   return (
     <tr className="border-t align-top">
       <td className="p-4 pl-6">
@@ -446,6 +561,155 @@ function ReferralRow({
           value={routingRationale}
           onChange={(e) => setRoutingRationale(e.target.value)}
         />
+        <details className="mt-2 max-w-60 rounded border border-slate-200 bg-slate-50 text-xs">
+          <summary className="cursor-pointer select-none px-2 py-1 font-semibold text-slate-600">
+            SVT / Exhibit A gates —{" "}
+            {svtObjective === "none" ? (
+              <span className="font-normal text-slate-400">not an SVT objective</span>
+            ) : svtGate.failedGate ? (
+              <span className="font-normal text-[#bc5a15]">Apex ({svtGate.failedGate.split(" — ")[0]})</span>
+            ) : (
+              <span className="font-normal text-emerald-700">SVT-eligible</span>
+            )}
+          </summary>
+          <div className="space-y-2 border-t border-slate-200 p-2">
+            <div className="text-slate-500">
+              Gate 1 — footprint:{" "}
+              {svtGate.footprintMatch ? (
+                <span className="text-emerald-700">match ({svtGate.footprintMatch}), verify</span>
+              ) : (
+                <span className="text-slate-400">no match in location text</span>
+              )}
+            </div>
+            <label className="block">
+              <span className="text-slate-500">Named Exhibit A objective</span>
+              <select
+                className="mt-1 w-full rounded border px-1 py-0.5 text-xs text-slate-700"
+                value={svtObjective}
+                onChange={(e) => setSvtObjective(e.target.value)}
+              >
+                {Object.entries(SVT_OBJECTIVE_LABELS).map(([v, l]) => (
+                  <option key={v} value={v}>{l}</option>
+                ))}
+              </select>
+            </label>
+            {svtObjective !== "none" && svtObjective !== "amazon_registration" && svtObjective !== "amazon_meeting" && (
+              <label className="block">
+                <span className="text-slate-500">Units (default: fleet size)</span>
+                <input
+                  className="mt-1 w-full rounded border px-1 py-0.5 text-xs text-slate-700"
+                  type="number" min="0"
+                  value={svtUnits}
+                  onChange={(e) => setSvtUnits(e.target.value)}
+                />
+              </label>
+            )}
+            {svtObjective === "amazon_meeting" && (
+              <label className="block">
+                <span className="text-slate-500">Attendees (of the 4 named contacts)</span>
+                <input
+                  className="mt-1 w-full rounded border px-1 py-0.5 text-xs text-slate-700"
+                  type="number" min="0" max="4"
+                  value={svtAttendees}
+                  onChange={(e) => setSvtAttendees(e.target.value)}
+                />
+              </label>
+            )}
+            {svtObjective === "amazon_registration" && (
+              <label className="flex items-center gap-1.5 text-slate-500">
+                <input
+                  type="checkbox"
+                  checked={svtAmazonConfirmed}
+                  onChange={(e) => setSvtAmazonConfirmed(e.target.checked)}
+                />
+                Written confirmation from Amazon received
+              </label>
+            )}
+            {svtObjective === "enterprise_pma" && (
+              <>
+                <label className="block">
+                  <span className="text-slate-500">Gate 3 — term (months, need ≥ 12)</span>
+                  <input
+                    className="mt-1 w-full rounded border px-1 py-0.5 text-xs text-slate-700"
+                    type="number" min="0"
+                    value={svtTermMonths}
+                    onChange={(e) => setSvtTermMonths(e.target.value)}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-slate-500">Gate 3 — annual gross profit (need ≥ $100,000)</span>
+                  <input
+                    className="mt-1 w-full rounded border px-1 py-0.5 text-xs text-slate-700"
+                    type="number" min="0"
+                    value={svtGrossProfit}
+                    onChange={(e) => setSvtGrossProfit(e.target.value)}
+                  />
+                </label>
+              </>
+            )}
+            {svtObjective !== "none" && (
+              <div className="text-slate-500">
+                Gate 5 — {svtDaysToCutoff()} days until the Jan 31 2027 term cutoff.
+                <div className="mt-1 flex gap-3">
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="radio"
+                      name={`cutoff-${row.id}`}
+                      checked={svtBeforeCutoff === true}
+                      onChange={() => setSvtBeforeCutoff(true)}
+                    />
+                    Expected before
+                  </label>
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="radio"
+                      name={`cutoff-${row.id}`}
+                      checked={svtBeforeCutoff === false}
+                      onChange={() => setSvtBeforeCutoff(false)}
+                    />
+                    Not before
+                  </label>
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="radio"
+                      name={`cutoff-${row.id}`}
+                      checked={svtBeforeCutoff === null}
+                      onChange={() => setSvtBeforeCutoff(null)}
+                    />
+                    Unknown
+                  </label>
+                </div>
+              </div>
+            )}
+            {svtObjective !== "none" && (
+              <div className="rounded bg-white p-1.5 text-slate-600">
+                Gross ${svtGate.gross.toLocaleString()} · Eligible ${svtGate.eligible.toLocaleString()} · Expected ${svtGate.expected.toLocaleString()}{" "}
+                <span className="text-slate-400">(75% verification probability, per Exhibit A decision 4)</span>
+                {svtGate.failedGate && <div className="mt-1 text-[#bc5a15]">{svtGate.failedGate}.</div>}
+              </div>
+            )}
+            {svtObjective !== "none" && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <button
+                  type="button"
+                  className="rounded border border-slate-300 bg-white px-2 py-1 text-slate-600 hover:bg-slate-100"
+                  onClick={applySvtRationale}
+                >
+                  Use as rationale
+                </button>
+                {category === "partner_routed_25_percent" && !svtGate.failedGate && (
+                  <button
+                    type="button"
+                    className="rounded border border-slate-300 bg-white px-2 py-1 text-slate-600 hover:bg-slate-100"
+                    onClick={applySvtCompensation}
+                  >
+                    Use 25% of expected as compensation
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </details>
       </td>
       <td className="p-4">
         <NativeSelect
@@ -515,6 +779,13 @@ function ReferralRow({
               compensation: Number(comp) || 0,
               routingStatus,
               routingRationale,
+              svtObjective,
+              svtUnits: svtUnits === "" ? null : Number(svtUnits),
+              svtAttendees: svtAttendees === "" ? null : Number(svtAttendees),
+              svtEnterpriseTermMonths: svtTermMonths === "" ? null : Number(svtTermMonths),
+              svtEnterpriseGrossProfit: svtGrossProfit === "" ? null : Number(svtGrossProfit),
+              svtAmazonRegistrationConfirmed: svtAmazonConfirmed,
+              svtExpectedBeforeCutoff: svtBeforeCutoff,
             })
           }
         >
