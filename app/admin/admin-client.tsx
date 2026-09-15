@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NotificationCenter, type AdminNotification } from "./notification-center";
 export type PartnerRow = {
   id: number;
@@ -109,6 +110,12 @@ export function AdminClient({
     else if (values.action === "resend_agreement_email")
       setNotice("Agreement email sent again.");
   }
+  const applicationsNeedingAttention = partners.filter(
+    (p) => p.status === "application_received" || p.status === "under_review",
+  ).length;
+  const referralsNeedingRouting = refs.filter(
+    (r) => (r.routingStatus || "not_started") === "not_started",
+  ).length;
   return (
     <main className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
       <p className="text-sm font-bold uppercase tracking-[.16em] text-[#bc5a15]">
@@ -135,7 +142,27 @@ export function AdminClient({
           </button>
         </div>
       )}
-      <section className="mt-8 rounded-3xl border bg-white shadow-sm">
+      <Tabs defaultValue={referralsNeedingRouting > 0 ? "referrals" : "applications"} className="mt-8">
+        <TabsList>
+          <TabsTrigger value="applications">
+            Applications
+            {applicationsNeedingAttention > 0 && (
+              <Badge className="ml-1.5 bg-[#fff0e5] text-[#bc5a15]">
+                {applicationsNeedingAttention}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="referrals">
+            Referrals
+            {referralsNeedingRouting > 0 && (
+              <Badge className="ml-1.5 bg-[#fff0e5] text-[#bc5a15]">
+                {referralsNeedingRouting}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="applications">
+      <section className="rounded-3xl border bg-white shadow-sm">
         <div className="border-b p-6">
           <h2 className="text-xl font-bold">Partner applications</h2>
         </div>
@@ -298,7 +325,9 @@ export function AdminClient({
           </table>
         </div>
       </section>
-      <section className="mt-6 rounded-3xl border bg-white shadow-sm">
+        </TabsContent>
+        <TabsContent value="referrals">
+      <section className="rounded-3xl border bg-white shadow-sm">
         <div className="border-b p-6">
           <h2 className="text-xl font-bold">Qualified lead pipeline</h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -327,6 +356,8 @@ export function AdminClient({
           </table>
         </div>
       </section>
+        </TabsContent>
+      </Tabs>
     </main>
   );
 }
