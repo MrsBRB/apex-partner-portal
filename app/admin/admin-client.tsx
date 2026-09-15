@@ -55,6 +55,9 @@ type R = {
   svtEnterpriseGrossProfit: number | null;
   svtAmazonRegistrationConfirmed: boolean;
   svtExpectedBeforeCutoff: boolean | null;
+  qualifyingCompensationReceived: number | null;
+  feeMinOverride: number | null;
+  feeMaxOverride: number | null;
 };
 // Fixed dollar amounts for the Apex-direct compensation categories, mirrored
 // from the Compensation rules table in app/resources/partner-workflow/page.tsx.
@@ -66,6 +69,16 @@ const CATEGORY_AMOUNTS: Record<string, number> = {
   apex_direct_3000: 3000,
   apex_direct_5000: 5000,
 };
+
+// Partner-routed referral fee: 25% of qualifying compensation Apex or Brooke
+// actually receives, subject to any written opportunity-specific minimum or
+// maximum (Agreement Clause 4). Rounded to the cent.
+function computePartnerRoutedFee(qualifying: number, min: number | null, max: number | null): number {
+  let fee = qualifying * 0.25;
+  if (min !== null) fee = Math.max(fee, min);
+  if (max !== null) fee = Math.min(fee, max);
+  return Math.round(fee * 100) / 100;
+}
 
 // ---- SVT Exhibit A gate check ------------------------------------------
 // Mirrors "The Deal Routing Workflow" and the "Exhibit A Rebuild Spec"
@@ -465,7 +478,10 @@ function ReferralRow({
     [svtTermMonths, setSvtTermMonths] = useState(String(row.svtEnterpriseTermMonths ?? "")),
     [svtGrossProfit, setSvtGrossProfit] = useState(String(row.svtEnterpriseGrossProfit ?? "")),
     [svtAmazonConfirmed, setSvtAmazonConfirmed] = useState(row.svtAmazonRegistrationConfirmed || false),
-    [svtBeforeCutoff, setSvtBeforeCutoff] = useState<boolean | null>(row.svtExpectedBeforeCutoff ?? null);
+    [svtBeforeCutoff, setSvtBeforeCutoff] = useState<boolean | null>(row.svtExpectedBeforeCutoff ?? null),
+    [qualifyingComp, setQualifyingComp] = useState(String(row.qualifyingCompensationReceived ?? "")),
+    [feeMin, setFeeMin] = useState(String(row.feeMinOverride ?? "")),
+    [feeMax, setFeeMax] = useState(String(row.feeMaxOverride ?? ""));
   let reasons: string[] = [];
   try {
     reasons = JSON.parse(row.qualificationReasons || "[]");
@@ -492,6 +508,17 @@ function ReferralRow({
   }
   function applySvtCompensation() {
     setComp(String(Math.round(svtGate.expected * 0.25)));
+  }
+  const partnerRoutedFee =
+    qualifyingComp === ""
+      ? null
+      : computePartnerRoutedFee(
+          Number(qualifyingComp) || 0,
+          feeMin === "" ? null : Number(feeMin),
+          feeMax === "" ? null : Number(feeMax),
+        );
+  function applyPartnerRoutedFee() {
+    if (partnerRoutedFee !== null) setComp(String(partnerRoutedFee));
   }
   return (
     <tr className="border-t align-top">
@@ -759,6 +786,55 @@ function ReferralRow({
           </option>
           <option value="custom_enterprise">Custom / enterprise</option>
         </NativeSelect>
+        {category === "partner_routed_25_percent" && (
+          <div className="mt-2 max-w-52 space-y-1.5 rounded border border-slate-200 bg-slate-50 p-2 text-xs">
+            <p className="text-slate-500">
+              Per the agreement: 25% of qualifying compensation Apex or Brooke
+              actually receives, subject to any written min/max.
+            </p>
+            <label className="block">
+              <span className="text-slate-500">Qualifying compensation received</span>
+              <input
+                className="mt-1 w-full rounded border px-1 py-0.5 text-xs text-slate-700"
+                type="number" min="0" step=".01"
+                value={qualifyingComp}
+                onChange={(e) => setQualifyingComp(e.target.value)}
+              />
+            </label>
+            <div className="flex gap-1.5">
+              <label className="block flex-1">
+                <span className="text-slate-500">Written min</span>
+                <input
+                  className="mt-1 w-full rounded border px-1 py-0.5 text-xs text-slate-700"
+                  type="number" min="0" step=".01"
+                  value={feeMin}
+                  onChange={(e) => setFeeMin(e.target.value)}
+                />
+              </label>
+              <label className="block flex-1">
+                <span className="text-slate-500">Written max</span>
+                <input
+                  className="mt-1 w-full rounded border px-1 py-0.5 text-xs text-slate-700"
+                  type="number" min="0" step=".01"
+                  value={feeMax}
+                  onChange={(e) => setFeeMax(e.target.value)}
+                />
+              </label>
+            </div>
+            {partnerRoutedFee !== null && (
+              <div className="rounded bg-white p-1.5 text-slate-600">
+                25% fee: ${partnerRoutedFee.toLocaleString()}
+                <button
+                  type="button"
+                  className="ml-2 rounded border border-slate-300 bg-white px-1.5 py-0.5 text-slate-600 hover:bg-slate-100"
+                  onClick={applyPartnerRoutedFee}
+                >
+                  Use as compensation
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </td>
       <td className="p-4">
         <Input
@@ -786,6 +862,9 @@ function ReferralRow({
               svtEnterpriseGrossProfit: svtGrossProfit === "" ? null : Number(svtGrossProfit),
               svtAmazonRegistrationConfirmed: svtAmazonConfirmed,
               svtExpectedBeforeCutoff: svtBeforeCutoff,
+              qualifyingCompensationReceived: qualifyingComp === "" ? null : Number(qualifyingComp),
+              feeMinOverride: feeMin === "" ? null : Number(feeMin),
+              feeMaxOverride: feeMax === "" ? null : Number(feeMax),
             })
           }
         >
