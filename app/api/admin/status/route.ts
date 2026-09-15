@@ -12,6 +12,7 @@ export async function PATCH(request: Request) {
     svtObjective?: string; svtUnits?: number | null; svtAttendees?: number | null;
     svtEnterpriseTermMonths?: number | null; svtEnterpriseGrossProfit?: number | null;
     svtAmazonRegistrationConfirmed?: boolean; svtExpectedBeforeCutoff?: boolean | null;
+    qualifyingCompensationReceived?: number | null; feeMinOverride?: number | null; feeMaxOverride?: number | null;
   };
   const supabase = createAdminClient();
   if (body.kind === "partner") {
@@ -59,6 +60,9 @@ export async function PATCH(request: Request) {
   if (body.svtEnterpriseGrossProfit !== undefined) values.svt_enterprise_gross_profit = body.svtEnterpriseGrossProfit;
   if (body.svtAmazonRegistrationConfirmed !== undefined) values.svt_amazon_registration_confirmed = body.svtAmazonRegistrationConfirmed;
   if (body.svtExpectedBeforeCutoff !== undefined) values.svt_expected_before_cutoff = body.svtExpectedBeforeCutoff;
+  if (body.qualifyingCompensationReceived !== undefined) values.qualifying_compensation_received = body.qualifyingCompensationReceived;
+  if (body.feeMinOverride !== undefined) values.fee_min_override = body.feeMinOverride;
+  if (body.feeMaxOverride !== undefined) values.fee_max_override = body.feeMaxOverride;
   if (body.status === "paid") values.paid_at = new Date().toISOString();
   const { data: record } = await supabase.from("referrals").update(values).eq("id", Number(body.id)).select().single();
   if (body.status === "paid" && existingReferral?.status !== "paid" && record) {
