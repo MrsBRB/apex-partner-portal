@@ -5,6 +5,7 @@ import {
   Banknote,
   CircleDollarSign,
   FileSignature,
+  Hourglass,
   Plus,
   Send,
   Users,
@@ -34,6 +35,7 @@ type Referral = {
   status: string;
   category: string;
   compensation: number;
+  routingStatus: string;
   qualificationScore: number;
   qualificationDecision: string;
   inactivityDate: string | null;
@@ -65,6 +67,9 @@ export function PortalClient({
   const [error, setError] = useState("");
   const earned = rows
     .filter((r) => r.status === "paid")
+    .reduce((a, r) => a + r.compensation, 0);
+  const estimated = rows
+    .filter((r) => r.status !== "paid" && r.category !== "tbd")
     .reduce((a, r) => a + r.compensation, 0);
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -218,9 +223,14 @@ export function PortalClient({
                         ["unknown", "Not confirmed"],
                       ]}
                     />
-                    <Field
-                      label="Operating hours / service window"
+                    <SelectField
+                      label="Service availability"
                       name="operatingHours"
+                      options={[
+                        ["day", "Day"],
+                        ["night", "Night"],
+                        ["weekends", "Weekends"],
+                      ]}
                     />
                   </div>
                   <div className="mt-4">
@@ -376,11 +386,16 @@ export function PortalClient({
           </p>
         </section>
       )}
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-4">
         <Metric
           icon={<Users />}
           label="Total referrals"
           value={String(rows.length).padStart(2, "0")}
+        />
+        <Metric
+          icon={<Hourglass />}
+          label="Estimated compensation"
+          value={money(estimated)}
         />
         <Metric
           icon={<CircleDollarSign />}
@@ -413,10 +428,11 @@ export function PortalClient({
                   <th className="p-4 pl-6">Company</th>
                   <th className="p-4">Fleet</th>
                   <th className="p-4">Qualification</th>
+                  <th className="p-4">Routing</th>
                   <th className="p-4">Category</th>
                   <th className="p-4">Status</th>
                   <th className="p-4">Inactive after</th>
-                  <th className="p-4 pr-6 text-right">Paid</th>
+                  <th className="p-4 pr-6 text-right">Compensation</th>
                 </tr>
               </thead>
               <tbody>
@@ -438,6 +454,11 @@ export function PortalClient({
                         {r.qualificationScore || 0}/100
                       </Badge>
                     </td>
+                    <td className="p-4">
+                      <Badge variant="outline">
+                        {label(r.routingStatus || "not_started")}
+                      </Badge>
+                    </td>
                     <td className="p-4">{label(r.category)}</td>
                     <td className="p-4">
                       <Badge className="bg-[#fff0e5] text-[#bc5a15]">
@@ -451,10 +472,22 @@ export function PortalClient({
                     </td>
                     <td className="p-4 pr-6 text-right font-bold">
                       {r.status === "paid" ? (
-                        money(r.compensation)
+                        <>
+                          {money(r.compensation)}
+                          <div className="text-xs font-normal text-emerald-600">
+                            Paid
+                          </div>
+                        </>
+                      ) : r.category !== "tbd" ? (
+                        <>
+                          {money(r.compensation)}
+                          <div className="text-xs font-normal text-slate-400">
+                            Estimated
+                          </div>
+                        </>
                       ) : (
                         <span className="font-normal text-slate-400">
-                          Pending
+                          Pending review
                         </span>
                       )}
                     </td>
@@ -464,6 +497,34 @@ export function PortalClient({
             </table>
           </div>
         )}
+      </section>
+      <section className="mt-6 rounded-3xl border bg-slate-50 p-6">
+        <h2 className="font-bold text-[#0d1f35]">Payout requirements</h2>
+        <p className="mt-2 text-sm text-slate-600">
+          The estimated amount above becomes payable only once Apex confirms
+          the referral is qualified and the triggering business event
+          actually occurs — an introduction alone never creates a payment
+          obligation.
+        </p>
+        <ul className="mt-3 grid list-disc gap-2 pl-5 text-sm text-slate-600 sm:grid-cols-2">
+          <li>
+            Apex-direct compensation is due within 10 business days after the
+            engagement is confirmed and active.
+          </li>
+          <li>
+            Partner-routed and custom compensation is due within 10 business
+            days after Apex or Brooke receives the qualifying payment;
+            installments are paid proportionally.
+          </li>
+          <li>
+            A referral not engaged within 12 months expires unless Apex
+            extends it in writing.
+          </li>
+          <li>
+            Once paid, the final amount and paid date stay visible in your
+            referral history above.
+          </li>
+        </ul>
       </section>
     </main>
   );
