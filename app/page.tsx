@@ -21,6 +21,7 @@ import Link from "next/link";
 import { ArrowRight, BadgeDollarSign, CalendarClock, FileCheck2, Handshake, LayoutDashboard, Send } from "lucide-react";
 import { BOOKING_URL, SiteShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
+import { FaqAccordion } from "@/components/faq-accordion";
 
 export default function Home() {
   return <SiteShell>
@@ -67,6 +68,13 @@ export default function Home() {
         </div>
       </section>
       <section className="bg-white"><div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 md:grid-cols-2 lg:px-8"><div><FileCheck2 className="size-9 text-[#e87b2f]"/><h2 className="mt-4 text-3xl font-bold">Everything stays connected.</h2><p className="mt-4 max-w-xl leading-7 text-slate-600">Applications, reference documents, agreements, referral activity, and compensation records live in the same workflow.</p></div><div className="grid grid-cols-2 gap-3 text-sm font-semibold"><Pill text="Application status"/><Pill text="Agreement tracking"/><Pill text="Referral history"/><Pill text="Compensation detail"/></div></div></section>
+      <section className="bg-[#f4f5f7]">
+        <div className="mx-auto max-w-3xl px-5 py-16 lg:px-8 lg:py-20">
+          <div className="text-center"><p className="text-sm font-bold uppercase tracking-[.18em] text-[#bc5a15]">Questions</p><h2 className="mt-3 text-4xl font-bold tracking-tight text-[#1a1a2e]">Frequently asked questions.</h2></div>
+          <div className="mt-10 rounded-2xl border border-slate-200 bg-white px-7 shadow-sm md:px-10"><FaqAccordion /></div>
+          <p className="mt-6 text-center text-sm font-semibold text-slate-500"><Link href="/resources/faq" className="text-[#bc5a15] hover:text-[#e87b2f]">See the full FAQ &rarr;</Link></p>
+        </div>
+      </section>
     </main>
   </SiteShell>;
 }
