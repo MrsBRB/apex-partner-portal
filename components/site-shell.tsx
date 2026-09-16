@@ -31,7 +31,6 @@ export function SiteShell({ children, compact = false }: { children: React.React
           <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
             <Link href="/apply" className="hover:text-white">Apply as a partner</Link>
             <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" className="hover:text-white">Book a quick call</a>
-            <Link href="/resources/agreement" className="hover:text-white">Referral partner agreement</Link>
             <Link href="/resources/qualification-guide" className="hover:text-white">Qualification guide</Link>
           </div>
         </div>
