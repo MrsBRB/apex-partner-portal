@@ -60,7 +60,7 @@ export default function Home() {
           </div>
           <div className="flex flex-col justify-center rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
             <h3 className="text-xl font-bold text-[#1a1a2e]">Want to talk it through first?</h3>
-            <p className="mt-2 leading-6 text-slate-600">Grab ten minutes with Brooke to see if it&apos;s a fit before you apply.</p>
+            <p className="mt-2 leading-6 text-slate-600">Grab ten minutes with our team to see if it&apos;s a fit before you apply.</p>
             <Button size="lg" asChild className="mt-5 bg-[#e87b2f] font-bold text-white hover:bg-[#bc5a15]"><a href={BOOKING_URL} target="_blank" rel="noopener noreferrer">Book a quick call <ArrowRight /></a></Button>
             <Link href="/apply" className="mt-3 text-center text-sm font-semibold text-[#bc5a15] hover:text-[#e87b2f]">or skip ahead and apply &rarr;</Link>
           </div>
