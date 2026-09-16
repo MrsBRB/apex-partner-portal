@@ -33,6 +33,7 @@ export function SiteShell({ children, compact = false }: { children: React.React
             <Link href="/apply" className="hover:text-white">Apply as a partner</Link>
             <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" className="hover:text-white">Book a quick call</a>
             <Link href="/resources/qualification-guide" className="hover:text-white">Qualification guide</Link>
+            <Link href="/resources/faq" className="hover:text-white">FAQ</Link>
           </div>
         </div>
         <div className="mt-8 border-t border-white/10 pt-6 text-xs text-slate-400">&copy; {new Date().getFullYear()} Apex Fleet Consulting LLC.</div>
