@@ -29,6 +29,7 @@ export function SiteShell({ children, compact = false }: { children: React.React
             <a href="mailto:info@apexfleetconsulting.com" className="mt-3 inline-block text-sm font-semibold text-[#f39a5b] hover:text-[#f3a469]">info@apexfleetconsulting.com</a>
           </div>
           <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
+            <a href="https://apexfleetconsulting.com" target="_blank" rel="noopener noreferrer" className="hover:text-white">About Apex Fleet Consulting</a>
             <Link href="/apply" className="hover:text-white">Apply as a partner</Link>
             <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" className="hover:text-white">Book a quick call</a>
             <Link href="/resources/qualification-guide" className="hover:text-white">Qualification guide</Link>
