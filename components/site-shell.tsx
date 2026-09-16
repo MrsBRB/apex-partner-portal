@@ -26,7 +26,7 @@ export function SiteShell({ children, compact = false }: { children: React.React
           <div>
             <div className="font-bold text-white">Apex Fleet Consulting</div>
             <p className="mt-2 max-w-sm text-sm leading-6">Questions about the referral partner program? Reach out anytime.</p>
-            <a href="mailto:brooke@apexfleetconsulting.com" className="mt-3 inline-block text-sm font-semibold text-[#f39a5b] hover:text-[#f3a469]">brooke@apexfleetconsulting.com</a>
+            <a href="mailto:info@apexfleetconsulting.com" className="mt-3 inline-block text-sm font-semibold text-[#f39a5b] hover:text-[#f3a469]">info@apexfleetconsulting.com</a>
           </div>
           <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
             <Link href="/apply" className="hover:text-white">Apply as a partner</Link>
