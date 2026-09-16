@@ -18,8 +18,8 @@
 // }
 
 import Link from "next/link";
-import { ArrowRight, BadgeDollarSign, FileCheck2, Handshake, LayoutDashboard, Send } from "lucide-react";
-import { SiteShell } from "@/components/site-shell";
+import { ArrowRight, BadgeDollarSign, CalendarClock, FileCheck2, Handshake, LayoutDashboard, Send } from "lucide-react";
+import { BOOKING_URL, SiteShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -44,6 +44,27 @@ export default function Home() {
       <section id="how-it-works" className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
         <div className="max-w-2xl"><p className="text-sm font-bold uppercase tracking-[.18em] text-[#bc5a15]">A clear process</p><h2 className="mt-3 text-4xl font-bold tracking-tight">From introduction to compensation.</h2></div>
         <div className="mt-10 grid gap-5 md:grid-cols-3"><Step icon={<Handshake/>} n="01" title="Apply" text="Tell us about your experience, network, and the markets you know."/><Step icon={<Send/>} n="02" title="Refer" text="Approved partners submit opportunities and supporting context in one place."/><Step icon={<BadgeDollarSign/>} n="03" title="Track & earn" text="Follow progress, documents, and eligible compensation without chasing updates."/></div>
+      </section>
+      <section className="bg-[#f4f5f7]">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 lg:grid-cols-[1fr_.85fr] lg:px-8 lg:py-20">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[.18em] text-[#bc5a15]">What it&apos;s worth</p>
+            <h2 className="mt-3 text-4xl font-bold tracking-tight text-[#1a1a2e]">Get paid for referrals that turn into work.</h2>
+            <div className="mt-6 flex items-baseline gap-3">
+              <BadgeDollarSign className="size-8 shrink-0 text-[#e87b2f]"/>
+              <span className="text-4xl font-black tracking-tight text-[#1a1a2e]">$500&ndash;$5,000+</span>
+              <span className="text-base font-semibold text-slate-500">per qualified referral</span>
+            </div>
+            <p className="mt-4 max-w-xl leading-7 text-slate-600">Eligible compensation depends on the opportunity and how it&apos;s routed. The full formula is in the partner agreement, and every referral&apos;s numbers are tracked for you in the portal.</p>
+            <p className="mt-6 flex items-center gap-2 text-sm font-semibold text-slate-500"><CalendarClock className="size-5 text-[#bc5a15]"/>No cost to join. No obligation. Applying takes about ten minutes.</p>
+          </div>
+          <div className="flex flex-col justify-center rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+            <h3 className="text-xl font-bold text-[#1a1a2e]">Want to talk it through first?</h3>
+            <p className="mt-2 leading-6 text-slate-600">Grab ten minutes with Brooke to see if it&apos;s a fit before you apply.</p>
+            <Button size="lg" asChild className="mt-5 bg-[#e87b2f] font-bold text-white hover:bg-[#bc5a15]"><a href={BOOKING_URL} target="_blank" rel="noopener noreferrer">Book a quick call <ArrowRight /></a></Button>
+            <Link href="/apply" className="mt-3 text-center text-sm font-semibold text-[#bc5a15] hover:text-[#e87b2f]">or skip ahead and apply &rarr;</Link>
+          </div>
+        </div>
       </section>
       <section className="bg-white"><div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 md:grid-cols-2 lg:px-8"><div><FileCheck2 className="size-9 text-[#e87b2f]"/><h2 className="mt-4 text-3xl font-bold">Everything stays connected.</h2><p className="mt-4 max-w-xl leading-7 text-slate-600">Applications, reference documents, agreements, referral activity, and compensation records live in the same workflow.</p></div><div className="grid grid-cols-2 gap-3 text-sm font-semibold"><Pill text="Application status"/><Pill text="Agreement tracking"/><Pill text="Referral history"/><Pill text="Compensation detail"/></div></div></section>
     </main>
