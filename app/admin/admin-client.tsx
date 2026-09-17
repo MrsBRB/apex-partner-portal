@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NotificationCenter, type AdminNotification } from "./notification-center";
+import { AdminTrafficPanel } from "@/components/admin/traffic-panel";
 export type PartnerRow = {
   id: number;
   contactName: string;
@@ -259,6 +260,7 @@ export function AdminClient({
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="traffic">Traffic</TabsTrigger>
         </TabsList>
         <TabsContent value="applications">
       <section className="rounded-3xl border bg-white shadow-sm">
@@ -455,6 +457,9 @@ export function AdminClient({
           </table>
         </div>
       </section>
+        </TabsContent>
+        <TabsContent value="traffic">
+          <AdminTrafficPanel />
         </TabsContent>
       </Tabs>
     </main>
