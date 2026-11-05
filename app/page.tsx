@@ -36,9 +36,10 @@ export default function Home() {
             <div className="mt-9 flex flex-wrap gap-3"><Button size="lg" asChild className="bg-[#e87b2f] font-bold text-white hover:bg-[#bc5a15]"><Link href="/apply">Become a partner <ArrowRight /></Link></Button><Button size="lg" variant="outline" asChild className="border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link href="/portal">Open partner portal</Link></Button></div>
           </div>
           <div className="self-end rounded-[2rem] border border-white/15 bg-white/8 p-6 shadow-2xl backdrop-blur">
-            <div className="mb-5 flex items-center justify-between"><span className="font-semibold">Your partner workspace</span><span className="rounded-full bg-[#e87b2f]/15 px-3 py-1 text-xs font-bold text-[#f39a5b]">TRANSPARENT</span></div>
+            <div className="mb-5 flex items-center justify-between"><span className="font-semibold">Example partner workspace</span><span className="rounded-full bg-[#e87b2f]/15 px-3 py-1 text-xs font-bold text-[#f39a5b]">SAMPLE</span></div>
             <div className="grid gap-3 sm:grid-cols-2"><PreviewStat label="Active referrals" value="06"/><PreviewStat label="Earned compensation" value="$4,250"/></div>
             <div className="mt-3 rounded-lg bg-white p-4 text-[#1a1a2e]"><div className="mb-4 flex items-center justify-between"><b>Recent activity</b><LayoutDashboard className="size-5 text-[#e87b2f]"/></div><div className="space-y-3 text-sm"><Activity company="Northline Services" status="Proposal"/><Activity company="Metro Utility Group" status="Qualified"/><Activity company="Rapid Route Logistics" status="Paid"/></div></div>
+            <p className="mt-3 text-xs text-slate-300">Illustration with sample data. Not actual partner results.</p>
           </div>
         </div>
       </section>
@@ -53,10 +54,10 @@ export default function Home() {
             <h2 className="mt-3 text-4xl font-bold tracking-tight text-[#1a1a2e]">Get paid for referrals that turn into work.</h2>
             <div className="mt-6 flex items-baseline gap-3">
               <BadgeDollarSign className="size-8 shrink-0 text-[#e87b2f]"/>
-              <span className="text-4xl font-black tracking-tight text-[#1a1a2e]">$500&ndash;$5,000+</span>
-              <span className="text-base font-semibold text-slate-500">per qualified referral</span>
+              <span className="text-4xl font-black tracking-tight text-[#1a1a2e]">$500&ndash;$5,000</span>
+              <span className="text-base font-semibold text-slate-500">flat fee per qualified Apex engagement</span>
             </div>
-            <p className="mt-4 max-w-xl leading-7 text-slate-600">Eligible compensation depends on the opportunity and how it&apos;s routed. The full formula is in the partner agreement, and every referral&apos;s numbers are tracked for you in the portal.</p>
+            <p className="mt-4 max-w-xl leading-7 text-slate-600">Other opportunities pay a share of what Apex collects, and unusually large or complex ones carry a custom fee agreed in writing before Apex pursues them. The full formula is in the partner agreement, and every referral&apos;s numbers are tracked for you in the portal.</p>
             <p className="mt-6 flex items-center gap-2 text-sm font-semibold text-slate-500"><CalendarClock className="size-5 text-[#bc5a15]"/>No cost to join. No obligation. Applying takes about ten minutes.</p>
           </div>
           <div className="flex flex-col justify-center rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">

@@ -147,7 +147,7 @@ export function PortalClient({
               </DialogHeader>
               <p className="text-sm text-slate-500">
                 Submit objective facts. The portal will produce a preliminary
-                qualification result; Apex-versus-SVT routing occurs later.
+                qualification result. Apex reviews every referral and decides how it is handled.
               </p>
               <form onSubmit={submit} className="space-y-5">
                 <Card title="1 · Company and contact">

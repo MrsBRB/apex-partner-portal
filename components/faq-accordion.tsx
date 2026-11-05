@@ -9,15 +9,15 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "How much can I earn per referral?",
-    a: "Eligible compensation runs $500 to $5,000 or more per qualified referral, depending on the opportunity. The details are in the referral partner agreement you sign once you're approved.",
+    a: "Apex engagements pay a flat $500 to $5,000 depending on the size of the work. Other opportunities pay a share of what Apex collects, or a custom fee agreed in writing before Apex pursues them. The details are in the referral partner agreement you sign once you're approved.",
   },
   {
     q: "What do I need to do after I make an introduction?",
-    a: "Nothing beyond submitting it in the portal. Apex handles the outreach, the pricing conversation, and the service delivery from there.",
+    a: "Nothing beyond submitting it in the portal. Apex handles the outreach and everything that follows, and you can track progress in the portal.",
   },
   {
     q: "What counts as a good referral?",
-    a: "Companies that run a meaningful commercial fleet and need an ongoing maintenance relationship rather than a single repair, reachable in California, Nevada, or Arizona.",
+    a: "Companies anywhere in the U.S. that run a meaningful commercial fleet and have a problem they already feel: rising maintenance spend, slipping PM compliance, vendor sprawl, downtime, or a program or technology change that needs experienced help.",
   },
   {
     q: "What if my referral doesn't turn into anything?",

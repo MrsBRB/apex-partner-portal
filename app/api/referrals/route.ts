@@ -37,10 +37,10 @@ function analyze(body: Record<string, string>) {
   let score = 0; const reasons: string[] = []; const fleet = Number(body.fleetSize) || 0;
   if (fleet >= 25) { score += 30; reasons.push("Meaningful fleet size"); } else if (fleet >= 10) { score += 22; reasons.push("Moderate fleet size"); } else if (fleet >= 5) { score += 10; reasons.push("Small fleet — lower priority"); } else reasons.push("Very small fleet");
   if (body.fleetCountSource === "confirmed") { score += 5; reasons.push("Vehicle count confirmed"); } else reasons.push("Vehicle count needs verification");
-  if (/\b(CA|California|NV|Nevada|AZ|Arizona)\b/i.test(body.location)) { score += 25; reasons.push("Within core coverage area"); } else reasons.push("Outside core coverage area");
+  if (body.location.trim()) { score += 25; reasons.push("Fleet location provided"); } else reasons.push("Fleet location missing");
   if (body.needType === "ongoing") { score += 20; reasons.push("Ongoing maintenance need"); } else reasons.push("One-time or unconfirmed need");
   if (body.decisionAccess === "direct") { score += 15; reasons.push("Direct decision-maker access"); } else if (body.decisionAccess === "introduction_available") { score += 8; reasons.push("Decision-maker introduction available"); } else reasons.push("Decision-maker access not established");
   if (body.currentVendorStatus === "open" || body.currentVendorStatus === "ending_soon") { score += 5; reasons.push("Near-term vendor opening"); }
-  if (body.leadPath === "amazon_dsp" && body.dspSelfPay !== "yes") return { score, decision: "not_qualified", reasons: [...reasons, "DSP self-pay is not confirmed"] };
+  if (body.leadPath === "amazon_dsp" && body.dspSelfPay !== "yes") return { score, decision: score >= 45 ? "manual_review" : "not_qualified", reasons: [...reasons, "DSP maintenance payment not confirmed; Apex will review"] };
   return { score, decision: score >= 70 ? "prequalified" : score >= 45 ? "manual_review" : "not_qualified", reasons };
 }
